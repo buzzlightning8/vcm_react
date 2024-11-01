@@ -4,44 +4,6 @@ import { Publisher } from "../models/publisherModel.js";
 
 const router = express.Router();
 
-function runChecks(publisherData) {
-  //Rule: men cannot be both elder and assistant
-  if (
-    publisherData.gender === "Homme" &&
-    publisherData.isElder &&
-    publisherData.isAssistant
-  ) {
-    return {
-      error: "Brother cannot be both elder and assistant.",
-    };
-  }
-  // Check for required fields if hasAssignments is true
-  if (publisherData.hasAssignments) {
-    for (const field of [
-      "asStartConversationYesNo",
-      "asFollowUpYesNo",
-      "asMakingDisciplesYesNo",
-    ]) {
-      if (publisherData[field] === undefined) {
-        return {
-          error: `${field} must be provided when hasAssignments is true.`,
-        };
-      }
-    }
-    // Additional fields for men
-    if (publisherData.gender === "Homme") {
-      for (const field of ["asBibleReadingYesNo", "asTalkYesNo"]) {
-        if (publisherData[field] === undefined) {
-          return {
-            error: `${field} must be provided for men when hasAssignments is true.`,
-          };
-        }
-      }
-    }
-  }
-  return null; // No errors
-}
-
 router.get("/", async (request, response) => {
   try {
     const publishers = await Publisher.find({});
@@ -70,12 +32,6 @@ router.post("/", async (request, response) => {
     );
     if (isDuplicate) return;
 
-    // Run validation checks
-    const validationCheckResult = runChecks(request.body);
-    if (validationCheckResult) {
-      return response.status(400).json({ error: validationCheckResult.error });
-    }
-
     const publisher = new Publisher(request.body);
     await publisher.save();
     return response.status(201).json(publisher);
@@ -102,16 +58,13 @@ router.get("/:id", async (request, response) => {
 // Route to update a publisher
 router.put("/:id", async (request, response) => {
   try {
-    // Run validation checks
-    const validationCheckResult = runChecks(request.body);
-    if (validationCheckResult) {
-      return response.status(400).json({ error: validationCheckResult.error });
-    }
-
-    const publisher = await Publisher.findByIdAndUpdate(id, request.body);
+    const { id } = request.params;
+    const publisher = await Publisher.findById(id);
     if (!publisher) {
       return response.status(404).json({ message: "Publisher not found" });
     }
+    Object.assign(publisher, request.body);
+    await publisher.save();
     return response
       .status(200)
       .send({ message: "Publisher updated successfully" });

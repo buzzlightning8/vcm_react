@@ -1,34 +1,15 @@
 import express from "express";
+import { checkDuplicate } from "../utils/validationHelpers.js";
 import { AssignmentType } from "../models/assignmentTypeModel.js";
 
 const router = express.Router();
 
-// Async function to check if a publisher with the same name and gender exists
-async function checkDuplicateMeetingType(meetingTypeData) {
-  const existingMeetingType = await MeetingType.findOne({
-    meetingTypeName: {
-      $regex: new RegExp(`^${meetingTypeData.meetingTypeName}$`, "i"),
-    },
-    meetingTypeDescription: {
-      $regex: new RegExp(`^${meetingTypeData.meetingTypeDescription}$`, "i"),
-    },
-  });
-
-  if (existingMeetingType) {
-    return {
-      error:
-        "A meeting type with the same name and description already exists.",
-    };
-  }
-  return null; // No duplicate found
-}
-
 router.get("/", async (request, response) => {
   try {
-    const meetingTypes = await MeetingType.find({});
+    const assignmentTypes = await AssignmentType.find({});
     return response.status(200).json({
-      count: meetingTypes.length,
-      data: meetingTypes,
+      count: assignmentTypes.length,
+      data: assignmentTypes,
     });
   } catch (error) {
     console.log(error.message);
@@ -39,15 +20,17 @@ router.get("/", async (request, response) => {
 // Route to post (create) a meeting type
 router.post("/", async (request, response) => {
   try {
-    // Check for duplicate publisher
-    const duplicateCheckResult = await checkDuplicateMeetingType(request.body);
-    if (duplicateCheckResult) {
-      return response.status(409).json({ error: duplicateCheckResult.error });
-    }
+    // Check for duplicate assignment type
+    const isDuplicate = await checkDuplicate(
+      AssignmentType,
+      { firstName: request.body.asTypeName },
+      response
+    );
+    if (isDuplicate) return;
 
-    const meetingType = new MeetingType(request.body);
-    await meetingType.save();
-    return response.status(201).json(meetingType);
+    const assignmentType = new AssignmentType(request.body);
+    await assignmentType.save();
+    return response.status(201).json(assignmentType);
   } catch (error) {
     console.log(error);
     return response

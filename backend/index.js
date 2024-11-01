@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import cors from "cors";
 import publisherRoute from "./routes/publisherRoute.js";
 import meetingTypeRoute from "./routes/meetingTypeRoute.js";
+import assignmentTypeRoute from "./routes/assignmentTypeRoute.js";
+import assignmentRoute from "./routes/assignmentRoute.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -21,6 +23,8 @@ app.get("/", (req, res) => {
 
 app.use("/publishers", publisherRoute);
 app.use("/meetingTypes", meetingTypeRoute);
+app.use("/assignmentTypes", assignmentTypeRoute);
+app.use("/assignments", assignmentRoute);
 
 app.listen(port, () => {
   console.log(`App is running on port: ${port}`);
